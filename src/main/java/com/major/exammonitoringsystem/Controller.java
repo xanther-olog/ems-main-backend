@@ -1,21 +1,23 @@
 package com.major.exammonitoringsystem;
 
 
-import com.major.exammonitoringsystem.customexceptions.JwtTokenExpiredException;
+import com.major.exammonitoringsystem.entity.QuestionEntity;
+import com.major.exammonitoringsystem.requestbody.GetAllQuestionsForASubject;
+import com.major.exammonitoringsystem.requestbody.JwtTokenIncoming;
 import com.major.exammonitoringsystem.requestbody.LoginRequest;
 import com.major.exammonitoringsystem.responses.LoginResponse;
+import com.major.exammonitoringsystem.responses.QuestionsResponse;
+import com.major.exammonitoringsystem.responses.UserInformation;
 import com.major.exammonitoringsystem.service.impl.ServiceClass;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -37,20 +39,27 @@ public class Controller {
     }
 
 
-    @SneakyThrows
-    @PostMapping("/verify/{jwt}")
-    public String verifyJwt(@PathVariable ("jwt") String jwt){
-        Jws<Claims> claims= Jwts.parser()
-                .setSigningKey("secret".getBytes(StandardCharsets.UTF_8))
-                .parseClaimsJws(jwt);
-        String exp=(String) claims.getBody().get("exp");
-        if(System.currentTimeMillis()>Long.parseLong(exp)){
-            throw new JwtTokenExpiredException("Jwt Token has expired!");
-        }
-        String name= (String) claims.getBody().get("Name");
-        String email= (String) claims.getBody().get("Email");
-        return name;
+    @PostMapping("/getuserdetails")
+    public ResponseEntity<UserInformation> getUserDetails(@RequestBody JwtTokenIncoming jwtTokenIncoming){
+        UserInformation userInformation=serviceClass.verifyJwtToken(jwtTokenIncoming.getJwt());
+        return ResponseEntity.ok(new UserInformation(userInformation.getUserId(),userInformation.getName()
+        ,userInformation.getEmail(),userInformation.getDateOfBirth(),userInformation.getSubject()
+                ,userInformation.getToday_date()));
     }
 
+    @PostMapping("/addquestions")
+    public String parseJson(){
+        List<QuestionEntity> listOfQuestionsToAddToDatabase = serviceClass.parseJson();
+        serviceClass.addQuestionsToDatabase(listOfQuestionsToAddToDatabase);
+        return "done";
+    }
+
+    @PostMapping("/getquestions")
+    public ResponseEntity<QuestionsResponse> getAllQuestions(@RequestBody GetAllQuestionsForASubject subjectGetter){
+        serviceClass.verifyJwtToken(subjectGetter.getJwt());
+        String subject=subjectGetter.getSubjectName();
+        List<QuestionEntity> allQuestions=serviceClass.getAllQuestionsForASubject(subject);
+        return ResponseEntity.ok(new QuestionsResponse(allQuestions));
+    }
 
 }

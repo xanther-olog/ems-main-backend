@@ -52,7 +52,13 @@ public class MyExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({JwtTokenExpiredException.class})
     public ResponseEntity<Object> handleClassNotFoundException(JwtTokenExpiredException ex, WebRequest webRequest){
         ErrorResponses errorResponses=new ErrorResponses(500,"Jwt Token has expired!");
-        return this.handleExceptionInternal(ex,errorResponses,new HttpHeaders(),HttpStatus.INTERNAL_SERVER_ERROR,webRequest);
+        return this.handleExceptionInternal(ex,errorResponses,new HttpHeaders(),HttpStatus.BAD_REQUEST,webRequest);
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class})
+    public ResponseEntity<Object> handleIllegalArgumentException(JwtTokenExpiredException ex, WebRequest webRequest){
+        ErrorResponses errorResponses=new ErrorResponses(500,"Empty string(s) detected!");
+        return this.handleExceptionInternal(ex,errorResponses,new HttpHeaders(),HttpStatus.BAD_REQUEST,webRequest);
     }
 
 }
